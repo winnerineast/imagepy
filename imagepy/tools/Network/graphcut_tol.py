@@ -8,7 +8,7 @@ import numpy as np
 import wx
 from numba import jit
 
-@jit
+@jit(nopython=True)
 def floodfill(img, x, y):
     buf = np.zeros((131072,2), dtype=np.uint16)
     color = img[int(y), int(x)]
@@ -72,18 +72,18 @@ class Plugin(Tool):
             self.status = 1
             self.cur = [(x, y)]
             ips.mark = Mark(self.cur)
-            ips.update = True
+            ips.update()
     
     def mouse_up(self, ips, x, y, btn, **key):
         ips.mark = None
         self.status = 0
         cut(ips.img, self.cur)
-        ips.update = 'pix'
+        ips.update()
     
     def mouse_move(self, ips, x, y, btn, **key):
         if self.status==1:
             self.cur.append((x, y))
-            ips.update = True
+            ips.update()
         
     def mouse_wheel(self, ips, x, y, d, **key):
         pass

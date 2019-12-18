@@ -8,7 +8,7 @@ import threading
 
 from ... import IPy
 from ...ui.panelconfig import ParaDialog
-from ..manager import TextLogManager, TaskManager, WidgetsManager
+from ..manager import TextLogManager, TaskManager, WidgetsManager, DocumentManager
 from time import time
 
 class Table:
@@ -33,26 +33,25 @@ class Table:
         
     def preview(self, tps, para):
         self.run(tps, tps.data, tps.snap, para)
-        tps.update = True
+        tps.update()
 
     def show(self):
         if self.view==None:return True
         self.dialog = ParaDialog(IPy.get_twindow(), self.title)
         self.dialog.init_view(self.view, self.para, 'preview' in self.note, modal=self.modal)
-        doc = self.__doc__ or '### Sorry\nNo document yet!'
-        self.dialog.on_help = lambda : IPy.show_md(self.title, doc)
+        self.dialog.on_help = lambda : IPy.show_md(self.title, DocumentManager.get(self.title))
         self.dialog.set_handle(lambda x:self.preview(self.tps, self.para))
         if self.modal: return self.dialog.ShowModal() == wx.ID_OK
         self.dialog.on_ok = lambda : self.ok(self.tps)
         self.dialog.on_cancel = lambda : self.cancel(self.tps)
         self.dialog.Show()
     
-    def run(self, tps, data, snap, para = None):pass
+    def run(self, tps, snap, data, para = None):pass
         
     def cancel(self, tps):
         if 'snap' in self.note:
             tps.data[tps.snap.columns] = tps.snap
-            tps.update = True
+            tps.update()
 
     def ok(self, tps, para=None, callafter=None):
         if para == None: para = self.para
@@ -63,12 +62,12 @@ class Table:
         win = WidgetsManager.getref('Macros Recorder')
         if win!=None: win.write('{}>{}'.format(self.title, para))
 
-    def runasyn(self,  tps, data, snap, para = None, callback = None):
+    def runasyn(self,  tps, snap, data, para = None, callback = None):
         TaskManager.add(self)
         start = time()
         self.run(tps, data, snap, para)
         IPy.set_info('%s: cost %.3fs'%(tps.title, time()-start))
-        tps.update = 'shp'
+        tps.update('shp')
         TaskManager.remove(self)
         if callback!=None:callback()
 

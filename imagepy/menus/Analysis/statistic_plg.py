@@ -9,7 +9,7 @@ from imagepy.core.engine import Simple
 from imagepy.core.roi import PointRoi
 from imagepy.core.manager import ImageManager, WindowsManager
 from imagepy.ui.widgets import HistCanvas
-from wx.lib.pubsub import pub
+from pubsub import pub
 import pandas as pd
 
 class HistogramFrame(wx.Frame):
@@ -73,7 +73,7 @@ class Histogram(Simple):
         msk = ips.get_msk('in')
         if ips.imgtype == 'rgb':
             img = ips.img if msk is None else ips.img[msk]
-            hist = [np.histogram(img[:,:,i], np.arange(257))[0] for i in (0,1,2)]
+            hist = [np.histogram(img.ravel()[i::3], np.arange(257))[0] for i in (0,1,2)]
         else:
             img = ips.lookup() if msk is None else ips.lookup()[msk]
             hist = np.histogram(img, np.arange(257))[0]
@@ -112,7 +112,7 @@ class Frequence(Simple):
         
 class Statistic(Simple):
     title = 'Pixel Statistic'
-    note = ['8-bit', '16-bit', 'int', 'float']
+    note = ['all']
     
     para = {'max':True, 'min':True,'mean':False,'var':False,'std':False,'slice':False}
     view = [(bool, 'max', 'max'),
@@ -126,9 +126,9 @@ class Statistic(Simple):
         rst = []
         if para['max']: rst.append(img.max())
         if para['min']: rst.append(img.min())
-        if para['mean']: rst.append(img.mean().round(2))
-        if para['var']: rst.append(img.var().round(2))
-        if para['std']: rst.append(img.std().round(2))
+        if para['mean']: rst.append(img.mean())
+        if para['var']: rst.append(img.var())
+        if para['std']: rst.append(img.std())
         return rst
         
     def run(self, ips, imgs, para = None):
@@ -190,7 +190,7 @@ class PointsValue(Simple):
         data, mark = [], []
         pts = np.array(ips.roi.body).round().astype(np.int)
         for n in range(len(imgs)):
-            xs, ys = (pts.T*k).round(2)
+            xs, ys = (pts.T[:2]*k).round(2)
             vs = imgs[n][ys, xs]
             cont = ([n]*len(vs), xs, ys, vs.round(2))
             if not para['slice']: cont = cont[1:]

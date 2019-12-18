@@ -25,7 +25,7 @@ class ScaleTool(Tool):
         return False
         
     def mouse_down(self, ips, x, y, btn, **key):  
-        lim = 5.0/key['canvas'].get_scale()  
+        lim = 5.0/key['canvas'].scale  
         self.moving = self.snap(x, y, lim)
         print(self.moving)
         
@@ -33,7 +33,7 @@ class ScaleTool(Tool):
         if self.moving : self.plg.preview(ips, self.para)
         
     def mouse_move(self, ips, x, y, btn, **key):
-        lim = 5.0/key['canvas'].get_scale()
+        lim = 5.0/key['canvas'].scale
         if btn==None:
             self.cursor = wx.CURSOR_CROSS
             if isinstance(self.snap(x, y, lim), str):
@@ -46,7 +46,7 @@ class ScaleTool(Tool):
             self.ox, self.oy = x, y
             self.plg.count()
             self.plg.dialog.reset()
-            ips.update = True
+            ips.update()
         elif self.moving != False:
             print("scale_tol.ScaleTool.mouse_move")
             if 'l' in self.moving:self.plg.lt = x
@@ -55,7 +55,7 @@ class ScaleTool(Tool):
             if 'b' in self.moving:self.plg.bm = y
             self.plg.count()
             self.plg.dialog.reset()
-            ips.update = True
+            ips.update()
 
 class Plugin(Filter):
     modal = False
@@ -98,7 +98,7 @@ class Plugin(Filter):
         self.para['kx'] = self.para['ky'] = 1
         
         ips.mark = self
-        ips.update = True
+        ips.update()
         ips.tool = ScaleTool(self)
         return True
         
@@ -124,7 +124,7 @@ class Plugin(Filter):
         ips.roi = self.bufroi
         ips.mark = None
         ips.tool = None
-        ips.update = 'pix'
+        ips.update()
         
     def run(self, ips, img, buf, para = None):
         if para == None: para = self.para
@@ -139,4 +139,4 @@ class Plugin(Filter):
         if self.para['msk'] and self.bufroi!=None:ips.roi = self.bufroi.affine(trans, offset)
         if self.para['img'] and not ips.get_msk('out') is None: 
             buf[ips.get_msk('out')] = img[ips.get_msk('out')]
-        ips.update = True
+        ips.update()

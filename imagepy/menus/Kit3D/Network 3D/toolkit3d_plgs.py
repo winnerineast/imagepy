@@ -258,7 +258,7 @@ class CutBranch(Simple):
 			rm = []
 			for i in g.nodes():
 				if g.degree(i)!=1:continue
-				s,e = g.edges(i)[0]
+				s,e = list(g.edges(i))[0]
 				if g[s][e][0]['weight']*k<=para['lim']:
 					rm.append(i)
 			g.remove_nodes_from(rm)
@@ -278,9 +278,37 @@ class RemoveIsolate(Simple):
 
 	def run(self, ips, imgs, para = None):
 		g = ips.data
-		for n in g.nodes():
+		for n in list(g.nodes()):
 			if len(g[n])==0: g.remove_node(n)
 		imgs *= 0
 		sknw.draw_graph(imgs, g)
 
-plgs = [Skeleton3D, BuildGraph, '-', CutBranch, RemoveIsolate, '-', Statistic, Sumerise, '-', Show3DGraph, Show3DGraphR]
+class Remove2Node(Simple):
+    title = 'Remove 2Path Node 3D'
+    note = ['all']
+
+    def load(self, ips):
+        if not isinstance(ips.data, nx.MultiGraph):
+            IPy.alert("Please build graph!");
+            return False;
+        return True;
+
+    def run(self, ips, imgs, para = None):
+        g = ips.data
+        for n in list(g.nodes()):
+            if len(g[n])!=2 or n in g[n]: continue 
+            (k1, e1), (k2, e2) = g[n].items()
+            if isinstance(g, nx.MultiGraph):
+                if len(e1)!=1 or len(e2)!=1: continue
+                e1, e2 = e1[0], e2[0]
+            l1, l2 = e1['pts'], e2['pts']
+            d1 = norm(l1[0]-g.node[n]['o']) > norm(l1[-1]-g.node[n]['o'])
+            d2 = norm(l2[0]-g.node[n]['o']) < norm(l2[-1]-g.node[n]['o'])
+            pts = np.vstack((l1[::[-1,1][d1]], l2[::[-1,1][d2]]))
+            l = np.linalg.norm(pts[1:]-pts[:-1], axis=1).sum()
+            g.remove_node(n)
+            g.add_edge(k1, k2, pts=pts, weight=l)
+        imgs *= 0
+        sknw.draw_graph(imgs, g)
+
+plgs = [Skeleton3D, BuildGraph, '-', CutBranch, RemoveIsolate, Remove2Node, '-', Statistic, Sumerise, '-', Show3DGraph, Show3DGraphR]

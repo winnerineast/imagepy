@@ -8,7 +8,7 @@ import numpy as np
 from imagepy.core.engine import Filter
 import scipy.ndimage as ndimg
 from skimage.filters import\
-    threshold_adaptive, threshold_otsu, threshold_yen,\
+    threshold_otsu, threshold_yen,\
     threshold_isodata, threshold_li, threshold_local,\
     threshold_minimum, threshold_mean, threshold_niblack,\
     threshold_sauvola, threshold_triangle, apply_hysteresis_threshold
@@ -34,7 +34,7 @@ class Hysteresis(Filter):
 
     def cancel(self, ips):
         ips.lut = self.buflut
-        ips.update = 'pix'
+        ips.update()
 
     def preview(self, ips, para):
         ips.lut[:] = self.buflut
@@ -43,7 +43,7 @@ class Hysteresis(Filter):
         lim2 = (para['high']-minv)*255/(maxv-minv)
         ips.lut[int(lim1):] = [0,255,0]
         ips.lut[int(lim2):] = [255,0,0]
-        ips.update = 'pix'
+        ips.update()
 
     def run(self, ips, snap, img, para = None):
         ips.lut = self.buflut

@@ -47,7 +47,7 @@ class Area:
         return None
     
     def draged(self, ox, oy, nx, ny, i):
-        self.update, self.infoupdate = True, True
+        self.update, self.infoupdate(), True
         if i[0]==True:
             for j in range(len(i[1])):
                 i[1][j] = (i[1][j][0]+(nx-ox), i[1][j][1]+(ny-oy))
@@ -101,7 +101,7 @@ class Plugin(Tool):
                 ips.mark.report(ips.title)
             return
 
-        lim = 5.0/key['canvas'].get_scale() 
+        lim = 5.0/key['canvas'].scale 
         if btn==1:
             if not self.doing:
                 if isinstance(ips.mark, Area):
@@ -124,18 +124,18 @@ class Plugin(Tool):
                 ips.mark.addpoint((x,y))
                 self.doing = False
                 ips.mark.commit()
-        ips.update = True
+        ips.update()
     
     def mouse_move(self, ips, x, y, btn, **key):
         if not isinstance(ips.mark, Area):return
-        lim = 5.0/key['canvas'].get_scale()        
+        lim = 5.0/key['canvas'].scale        
         if btn==None:
             self.cursor = wx.CURSOR_CROSS
             if ips.mark.snap(x, y, lim)!=None:
                 self.cursor = wx.CURSOR_HAND
         elif btn==1:
             ips.mark.draged(self.odx, self.ody, x, y, self.curobj)
-            ips.update = True
+            ips.update()
         self.odx, self.ody = x, y
 
     def mouse_up(self, ips, x, y, btn, **key):

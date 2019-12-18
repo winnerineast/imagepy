@@ -19,7 +19,7 @@ class Plugin(Tool):
         self.helper = Polygonbuf()
             
     def mouse_down(self, ips, x, y, btn, **key): 
-        lim = 5.0/key['canvas'].get_scale()
+        lim = 5.0/key['canvas'].scale
         ips.mark = self.helper
         if btn==1:
             if not self.doing:
@@ -54,7 +54,7 @@ class Plugin(Tool):
                         self.odx, self.ody = x,y
                 else: ips.roi = None
 
-        ips.update = True
+        ips.update()
 
     def mouse_up(self, ips, x, y, btn, **key):
         if self.doing:
@@ -64,11 +64,11 @@ class Plugin(Tool):
                 if not ips.roi.commit():ips.roi = None
             elif ips.roi.dtype == 'polygon':
                 ips.roi.commit(self.helper.pop(), self.oper)
-        ips.update = True
+        ips.update()
         
     def mouse_move(self, ips, x, y, btn, **key):
         if ips.roi==None:return
-        lim = 5.0/key['canvas'].get_scale()         
+        lim = 5.0/key['canvas'].scale        
         if btn==None:
             self.cursor = wx.CURSOR_CROSS
             if ips.roi.snap(x, y, ips.cur, lim)!=None:
@@ -81,7 +81,7 @@ class Plugin(Tool):
                 ys = np.sin(ar)*abs(t-b)/2+(t+b)/2
                 self.helper.buf = [[(x,y) for x,y in zip(xs,ys)],[]]
             if self.curobj: ips.roi.draged(self.odx, self.ody, x, y, ips.cur, self.curobj)
-            ips.update = True
+            ips.update()
         self.odx, self.ody = x, y
 
     def mouse_wheel(self, ips, x, y, d, **key):

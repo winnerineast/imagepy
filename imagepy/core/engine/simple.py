@@ -8,7 +8,7 @@ import threading
 
 from ... import IPy
 from ...ui.panelconfig import ParaDialog
-from ..manager import TextLogManager, TaskManager, WidgetsManager
+from ..manager import TextLogManager, TaskManager, WidgetsManager, DocumentManager
 from time import time
 
 class Simple:
@@ -22,7 +22,7 @@ class Simple:
     modal = True
 
     def __init__(self, ips=None):
-        print('simple start')
+        print('Simple start')
         self.ips = IPy.get_ips() if ips==None else ips
         self.dialog = None
     
@@ -37,12 +37,11 @@ class Simple:
         if self.view==None:return True
         self.dialog = temp(IPy.get_window(), self.title)
         self.dialog.init_view(self.view, self.para, 'preview' in self.note, modal=self.modal)
-        doc = self.__doc__ or '### Sorry\nNo document yet!'
-        self.dialog.on_help = lambda : IPy.show_md(self.title, doc)
-        self.dialog.set_handle(lambda x:self.preview(self.ips, self.para))
+        self.dialog.on_help = lambda : IPy.show_md(self.title, DocumentManager.get(self.title))
+        self.dialog.set_handle(lambda x:self.preview(self.ips, self.para) is self.ips.update())
         if self.modal: return self.dialog.ShowModal() == wx.ID_OK
         self.dialog.on_ok = lambda : self.ok(self.ips)
-        self.dialog.on_cancel = lambda : self.cancel(self.ips)
+        self.dialog.on_cancel = lambda : self.cancel(self.ips) is self.ips.update()
         self.dialog.Show()
     
     def run(self, ips, imgs, para = None):pass
@@ -63,43 +62,43 @@ class Simple:
         start = time()
         self.run(ips, imgs, para)
         IPy.set_info('%s: cost %.3fs'%(ips.title, time()-start))
-        ips.update = 'pix'
+        ips.update()
         TaskManager.remove(self)
         if callback!=None:callback()
 
     def check(self, ips):
         note = self.note
         if ips == None:
-            IPy.alert('no image opened!')
+            IPy.alert('No image opened!')
             return False
         if 'req_roi' in note and ips.roi == None:
-            IPy.alert('no Roi found!')
+            IPy.alert('No Roi found!')
             return False
         if not 'all' in note:
             if ips.get_imgtype()=='rgb' and not 'rgb' in note:
-                IPy.alert('do not surport rgb image')
+                IPy.alert('Do not surport rgb image')
                 return False
             elif ips.get_imgtype()=='8-bit' and not '8-bit' in note:
-                IPy.alert('do not surport 8-bit image')
+                IPy.alert('Do not surport 8-bit image')
                 return False
             elif ips.get_imgtype()=='16-bit' and not '16-bit' in note:
-                IPy.alert('do not surport 16-bit uint image')
+                IPy.alert('Do not surport 16-bit uint image')
                 return False
             elif ips.get_imgtype()=='32-int' and not 'int' in note:
-                IPy.alert('do not surport 32-bit int uint image')
+                IPy.alert('Do not surport 32-bit int uint image')
                 return False
             elif 'float' in ips.get_imgtype() and not 'float' in note:
-                IPy.alert('do not surport float image')
+                IPy.alert('Do not surport float image')
                 return False
         if sum([i in note for i in ('stack','stack2d','stack3d')])>0:
             if ips.get_nslices()==1:
-                IPy.alert('stack required!')
+                IPy.alert('Stack required!')
                 return False
             elif 'stack2d' in note and ips.is3d:
-                IPy.alert('stack2d required!')
+                IPy.alert('Stack2d required!')
                 return False
             elif 'stack3d' in note and not ips.is3d:
-                IPy.alert('stack3d required!')
+                IPy.alert('Stack3d required!')
                 return False
         return True
         
@@ -119,6 +118,8 @@ class Simple:
         elif self.modal:
             if self.show():
                 self.ok(self.ips, para, callback)
-            else:self.cancel(self.ips)
+            else:
+                self.cancel(self.ips)
+                self.ips.update()
             if not self.dialog is None: self.dialog.Destroy()
         else: self.show()

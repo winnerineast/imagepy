@@ -1,6 +1,5 @@
 import scipy.ndimage as ndimg
 import numpy as np
-from numba import jit
 from imagepy.core.engine import Filter
 from imagepy.ipyalg import find_maximum, ridge, stair, isoline, watershed
 from imagepy.core.roi import PointRoi
@@ -44,7 +43,7 @@ class FindMax(Filter):
     def run(self, ips, snap, img, para = None):
         pts = find_maximum(self.ips.img, para['tol'])
         self.ips.roi = PointRoi([tuple(i) for i in pts[:,::-1]])
-        self.ips.update = True
+        self.ips.update()
 
 class FindMin(Filter):
     title = 'Find Minimum'
@@ -56,7 +55,7 @@ class FindMin(Filter):
     def run(self, ips, snap, img, para = None):
         pts = find_maximum(self.ips.img, para['tol'], False)
         self.ips.roi = PointRoi([tuple(i) for i in pts[:,::-1]])
-        self.ips.update = True
+        self.ips.update()
 
 class UPRidge(Filter):
     title = 'Find Riedge'
@@ -79,7 +78,7 @@ class UPRidge(Filter):
             ips.lut[:para['thr']] = [0,255,0]
         else:
             ips.lut[para['thr']:] = [255,0,0]
-        ips.update = 'pix'
+        ips.update()
 
     #process
     def run(self, ips, snap, img, para = None):
@@ -99,11 +98,11 @@ class UPRidge(Filter):
 
 class ARidge(Filter):
     title = 'Active Ridge'
-    note = ['8-bit', 'not_slice', 'auto_snap', 'not_channel']
+    note = ['8-bit', 'not_slice', 'auto_snap', 'not_channel', 'req_roi']
     
     para = {'sigma':1.0, 'ud':True, 'type':'white line'}
-    view = [(float, (0,5), 1, 'sigma', 'sigma', 'pix'),
-    (list, 'type', ['white line', 'gray line', 'white line on ori'], str, 'output', ''),
+    view = [(float, 'sigma', (0,5), 1, 'sigma', 'pix'),
+            (list, 'type', ['white line', 'gray line', 'white line on ori'], str, 'output', ''),
             (bool, 'ud', 'ascend')]
     
     def run(self, ips, snap, img, para = None):
@@ -140,7 +139,7 @@ class Watershed(Filter):
             ips.lut[:para['thr']] = [0,255,0]
         else:
             ips.lut[para['thr']:] = [255,0,0]
-        ips.update = 'pix'
+        ips.update()
 
     #process
     def run(self, ips, snap, img, para = None):
@@ -178,11 +177,11 @@ class UPWatershed(Filter):
         ips.lut[:] = self.buflut
         ips.lut[:para['thr1']] = [0,255,0]
         ips.lut[para['thr2']:] = [255,0,0]
-        ips.update = 'pix'
+        ips.update()
 
     def cancel(self, ips):
         ips.lut = self.buflut
-        ips.update = 'pix'
+        ips.update()
 
     #process
     def run(self, ips, snap, img, para = None):

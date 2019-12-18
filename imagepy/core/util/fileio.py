@@ -8,6 +8,8 @@ import numpy as np
 def show_img(img, title):
     if isinstance(img, list):
         return IPy.show_img(img, title)
+    if img.dtype!=np.uint8 and img.ndim>2 and img.shape[2]!=3:
+        return IPy.show_img(img, title)
     if img.dtype==np.uint8 and img.ndim==3 and img.shape[2]==4:
         img = img[:,:,:3].copy()
     IPy.show_img([img], title)
@@ -52,6 +54,12 @@ class Reader(Free):
         fp, fn = os.path.split(para['path'])
         fn, fe = os.path.splitext(fn)
         read = ReaderManager.get(fe[1:], None)
+        if read is None:
+            a, b = os.path.splitext(fn)
+            fn, fe = a, b+fe
+            read = ReaderManager.get(fe[1:], None)
+        if read is None: 
+            return IPy.alert('No reader found for %s'%fe[1:])
         view = ViewerManager.get(fe[1:])
 
         #group, read = (True, read[0]) if isinstance(read, tuple) else (False, read)
@@ -73,5 +81,4 @@ class Writer(Simple):
         fn, fe = os.path.splitext(fn)
         write = WriterManager.get(fe[1:], 'img')
         write2 = write or WriterManager.get(fe[1:], 'imgs')
-        print(write2, write)
         write2(para['path'], imgs if write is None else ips.img)

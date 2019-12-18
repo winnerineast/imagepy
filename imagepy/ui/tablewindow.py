@@ -21,7 +21,6 @@ class TableBase(Grid.GridTableBase):
         self.tps = tps
         self._rows = tps.data.shape[0]
         self._cols = tps.data.shape[1]
-        print('haha')
 
     def GetNumberCols(self):
         if self.tps is None: return 0
@@ -219,7 +218,7 @@ class GridBase(Grid.Grid):
             cn = self.tps.data.columns[col]
             props.ix['ln'] = (props.ix['ln'].min()+1)%3
         '''
-        self.tps.update = True
+        self.tps.update()
 
 
     def set_handler(self, handle=None):
@@ -250,13 +249,9 @@ class GridBase(Grid.Grid):
     def select(self):
         self.Bind(Grid.EVT_GRID_RANGE_SELECT, None)
         self.ClearSelection()
-        print('select grid')
-        print(self.tps.rowmsk, self.tps.colmsk)
         for i in self.tps.data.index.get_indexer(self.tps.rowmsk):
-            print(i)
             self.SelectRow(i, True)
         for i in self.tps.data.columns.get_indexer(self.tps.colmsk):
-            print(i)
             self.SelectCol(i, True)
         self.Bind(Grid.EVT_GRID_RANGE_SELECT, self.on_select)
 
@@ -265,14 +260,14 @@ class GridBase(Grid.Grid):
 
     def on_idle(self, event):
         if not self.IsShown() or self.tps is None\
-            or self.tps.update == False: return
-        if self.tps.update == 'shp':
+            or self.tps.dirty == False: return
+        if self.tps.dirty == 'shp':
             self.select()
             self.Reset()
-        if self.tps.update == True:
+        if self.tps.dirty == True:
             self.select()
             self.ForceRefresh()
-        self.tps.update = False
+        self.tps.dirty = False
         print('update')
 
 

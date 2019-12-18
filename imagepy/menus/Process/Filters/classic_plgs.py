@@ -16,7 +16,6 @@ class Uniform(Filter):
         nimg.uniform_filter(snap, para['size'], output=img)
 
 class Gaussian(Filter):
-    __doc__ = nimg.gaussian_filter.__doc__
     title = 'Gaussian'
     note = ['all', 'auto_msk', 'auto_snap','preview']
     para = {'sigma':2}
@@ -171,7 +170,6 @@ class Variance(Filter):
 
     #process
     def run(self, ips, snap, img, para = None):
-        print(snap.dtype, img.dtype)
         nimg.uniform_filter(snap**2, para['size'], output=img)
         img -= nimg.uniform_filter(snap, para['size'])**2
 

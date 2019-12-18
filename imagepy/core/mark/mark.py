@@ -96,7 +96,7 @@ def plot(pts, dc, f, **key):
 		if pts['type'] == 'polygons':
 			dc.DrawPolygonList(plst)
 		
-		if isline or pts['type'] == 'line':
+		if isline or pts['type'] == 'lines':
 			for line in plst:
 				dc.DrawLines(line)
 		
@@ -337,7 +337,6 @@ def draw_layers(pts, dc, f, **key):
 
 	dc.SetPen(pen)
 	dc.SetBrush(brush)
-	print(pts['body'].keys())
 	if key['cur'] in pts['body']:
 		draw(pts['body'][key['cur']], dc, f, **key)
 

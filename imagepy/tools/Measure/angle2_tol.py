@@ -86,7 +86,7 @@ class Plugin(Tool):
             if isinstance(ips.mark, Angle):
                 ips.mark.report(ips.title)
             return
-        lim = 5.0/key['canvas'].get_scale()
+        lim = 5.0/key['canvas'].scale
         if btn==1:
             # If not painting and exists roi, then try to select roi?
             if not self.doing:
@@ -106,25 +106,25 @@ class Plugin(Tool):
                 self.curobj = (ips.mark.buf, -1)
                 self.odx, self.ody = x,y
 
-        ips.update = True
+        ips.update()
     
     def mouse_up(self, ips, x, y, btn, **key):
         self.curobj = None
         if self.doing:
             ips.mark.addline()
         self.doing = False
-        ips.update = True
+        ips.update()
     
     def mouse_move(self, ips, x, y, btn, **key):
         if not isinstance(ips.mark, Angle):return
-        lim = 5.0/key['canvas'].get_scale()      
+        lim = 5.0/key['canvas'].scale      
         if btn==None:
             self.cursor = wx.CURSOR_CROSS
             if ips.mark.snap(x, y, lim)!=None:
                 self.cursor = wx.CURSOR_HAND
         elif btn==1:
             ips.mark.draged(self.odx, self.ody, x, y, self.curobj)
-            ips.update = True
+            ips.update()
         self.odx, self.ody = x, y
         
     def mouse_wheel(self, ips, x, y, d, **key):

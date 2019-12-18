@@ -1,0 +1,21 @@
+name: imagepy
+channels:
+  - conda-forge
+dependencies:
+  - numba
+  - numpy-stl
+  - openpyxl
+  - pandas
+  - pydicom
+  - pypubsub
+  - read-roi
+  - scikit-image
+  - scikit-learn
+  - shapely
+  - wxpython
+  - xlrd
+  - xlwt
+  - markdown
+  - pip:
+    - moderngl
+    - pystackreg

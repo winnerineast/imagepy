@@ -5,8 +5,8 @@ Created on Fri Jan  6 23:45:59 2017
 @author: yxl
 """
 import os, sys
-from ..engine import Macros, MkDown, Widget, WorkFlow
-from ..manager import ToolsManager, PluginsManager, WidgetsManager
+from ..engine import Macros, MkDown, Widget, WorkFlow, Report
+from ..manager import ToolsManager, PluginsManager, WidgetsManager, DocumentManager
 from ... import IPy, root_dir
 from codecs import open
 
@@ -23,9 +23,13 @@ def extend_plugins(path, lst, err):
     for i in lst:
         if isinstance(i, tuple) or i=='-': 
             rst.append(i)
-            
-        elif i[-3:] == '.mc':
+        elif i[-3:] == 'rpt':
             pt = os.path.join(root_dir,path)
+            print(pt+'/'+i)
+            rst.append(Report(i[:-4], pt+'/'+i))
+            PluginsManager.add(rst[-1])
+        elif i[-3:] == '.mc':
+            pt = os.path.join(root_dir, path)
             f = open(pt+'/'+i, 'r', 'utf-8')
             cmds = f.readlines()
             f.close()
@@ -80,7 +84,7 @@ def sort_plugins(catlog, lst):
     for i in catlog:
         if i=='-':rst.append('-')
         for j in lst:
-            if j[:-3]==i or j[0].title==i:
+            if j[:-3]==i or j[:-4]==i or j[0].title==i:
                 lst.remove(j)
                 rst.append(j)
     rst.extend(lst)
@@ -98,7 +102,7 @@ def build_plugins(path, err=False):
             if len(sub)!=0:subtree.append(sub)
         elif i[-6:] in ('plg.py', 'lgs.py', 'wgt.py', 'gts.py'):
             subtree.append(i)
-        elif i[-3:] in ('.mc', '.md', '.wf'):
+        elif i[-3:] in ('.mc', '.md', '.wf', 'rpt'):
             subtree.append(i)
     if len(subtree)==0:return []
     
@@ -107,19 +111,22 @@ def build_plugins(path, err=False):
     pg = __import__('imagepy.'+rpath,'','',[''])
     pg.title = os.path.basename(path)
     if hasattr(pg, 'catlog'):
+        if 'Personal Information' in pg.catlog:
+            print(subtree)
         subtree = sort_plugins(pg.catlog, subtree)
     subtree = extend_plugins(path, subtree, err)
     
     if root and sta and len(err)>0:
-        IPy.write('some plugin may be not loaded, but not affect otheres!')
+        IPy.write('Some plugin may be not loaded, but not affect others!')
         for i in err: IPy.write('>>> %-50s%-20s%s'%i)
     return (pg, subtree)  
     
 def extend_tools(path, lst, err):
     rst = []
     for i in lst:
-        if i[-3:] in ('.mc', '.md', '.wf'):
+        if i[-3:] in ('.mc', '.md', '.wf', 'rpt'):
             pt = os.path.join(root_dir, path)
+            # if i[-3:] == '.md':print(pt)
             f = open(pt+'/'+i)
             cmds = f.readlines()
             f.close()
@@ -165,7 +172,7 @@ def build_tools(path, err=False):
         elif not root:
             if i[len(i)-7:] in ('_tol.py', 'tols.py'):
                 subtree.append(i[:-3])
-            elif i[-3:] in ('.mc', '.md', '.wf'):
+            elif i[-3:] in ('.mc', '.md', '.wf', 'rpt'):
                 subtree.append(i)
     if len(subtree)==0:return []
     rpath = path.replace('/', '.').replace('\\','.')
@@ -231,6 +238,18 @@ def build_widgets(path, err=False):
         IPy.write('widgets not loaded:')
         for i in err: IPy.write('>>> %-50s%-20s%s'%i)
     return (pg, subtree)
+
+def build_document(path):
+    docs = []
+    for dirpath,dirnames,filenames in os.walk(path):
+        for filename in filenames:
+            if filename[-3:] != '.md': continue
+            docs.append(os.path.join(dirpath, filename))
+            f = open(docs[-1], encoding='utf-8')
+            cont = f.read()
+            f.close()
+            DocumentManager.add(filename[:-3], cont)
+    return docs
 
 if __name__ == "__main__":
     print (os.getcwd())

@@ -90,7 +90,7 @@ class Plugin(Tool):
             if isinstance(ips.mark, Angle):
                 ips.mark.report(ips.title)
             return
-        lim = 5.0/key['canvas'].get_scale() 
+        lim = 5.0/key['canvas'].scale 
         if btn==1:
             # 如果有没有在绘制中，且已经有roi，则试图选取
             if not self.doing:
@@ -114,21 +114,21 @@ class Plugin(Tool):
                 ips.mark.buf.append((x,y))
                 self.doing = False
                 ips.mark.addline()
-        ips.update = True
+        ips.update()
     
     def mouse_up(self, ips, x, y, btn, **key):
         self.curobj = None
     
     def mouse_move(self, ips, x, y, btn, **key):
         if not isinstance(ips.mark, Angle):return
-        lim = 5.0/key['canvas'].get_scale()      
+        lim = 5.0/key['canvas'].scale      
         if btn==None:
             self.cursor = wx.CURSOR_CROSS
             if ips.mark.snap(x, y, lim)!=None:
                 self.cursor = wx.CURSOR_HAND
         elif btn==1:
             ips.mark.draged(self.odx, self.ody, x, y, self.curobj)
-            ips.update = True
+            ips.update()
         self.odx, self.ody = x, y
         
     def mouse_wheel(self, ips, x, y, d, **key):

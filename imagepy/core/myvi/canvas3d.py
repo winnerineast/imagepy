@@ -1,23 +1,20 @@
-import sys
+import sys, platform
 import moderngl
 import numpy as np
 import wx, math
 import wx.glcanvas as glcanvas
 from .manager import *
 import os.path as osp
-from wx.lib.pubsub import pub
+from pubsub import pub
 from .util import *
-
-#----------------------------------------------------------------------
-from wx.glcanvas import WX_GL_DEPTH_SIZE 
-attribs=[WX_GL_DEPTH_SIZE,32,0,0]; 
 
 class Canvas3D(glcanvas.GLCanvas):
     def __init__(self, parent, manager=None):
-        attribList = attribs = (glcanvas.WX_GL_RGBA, glcanvas.WX_GL_DOUBLEBUFFER, glcanvas.WX_GL_DEPTH_SIZE, 24)
-        glcanvas.GLCanvas.__init__(self, parent, -1, attribList=attribList)
+        attribList = (glcanvas.WX_GL_CORE_PROFILE, glcanvas.WX_GL_RGBA, glcanvas.WX_GL_DOUBLEBUFFER, glcanvas.WX_GL_DEPTH_SIZE, 24)
+        glcanvas.GLCanvas.__init__(self, parent, -1, attribList=attribList[platform.system() == 'Windows':])
         self.init = False
         self.context = glcanvas.GLContext(self)
+        self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
         self.manager = self.manager = Manager() if manager is None else manager
         self.size = None
 
@@ -27,10 +24,12 @@ class Canvas3D(glcanvas.GLCanvas):
         self.Bind(wx.EVT_PAINT, self.OnPaint)
         self.Bind(wx.EVT_LEFT_DOWN, self.OnMouseDown)
         self.Bind(wx.EVT_LEFT_UP, self.OnMouseUp)
+        self.Bind(wx.EVT_RIGHT_DOWN, self.OnMouseDown)
+        self.Bind(wx.EVT_RIGHT_UP, self.OnMouseUp)
         self.Bind(wx.EVT_MOTION, self.OnMouseMotion)
         self.Bind(wx.EVT_MOUSEWHEEL, self.OnMouseWheel)
         self.lastx, self.lasty = None, None
-        self.update = True
+        #self.update()
         #print('init===========')
 
     def InitGL(self):
@@ -76,11 +75,23 @@ class Canvas3D(glcanvas.GLCanvas):
             x, y = evt.GetPosition()
             dx, dy = x-self.lastx, y-self.lasty
             self.lastx, self.lasty = x, y
-            #self.manager.h -= dx/200
             angx = self.manager.angx - dx/200
             angy = self.manager.angy + dy/200
-            #print('ang', angx, angy)
             self.manager.set_pers(angx=angx, angy=angy)
+            self.Refresh(False)
+        if evt.Dragging() and evt.RightIsDown():
+            light = self.manager.light
+            x, y = evt.GetPosition()
+            dx, dy = x-self.lastx, y-self.lasty
+            self.lastx, self.lasty = x, y
+            angx, angy = dx/200, dy/200
+            vx, vy, vz = self.manager.light
+            ay = math.asin(vz/math.sqrt(vx**2+vy**2+vz**2))-angy
+            xx = math.cos(angx)*vx - math.sin(angx)*vy
+            yy = math.sin(angx)*vx + math.cos(angx)*vy
+            ay = max(min(math.pi/2-1e-4, ay), -math.pi/2+1e-4)
+            zz, k = math.sin(ay), math.cos(ay)/math.sqrt(vx**2+vy**2)
+            self.manager.set_light((xx*k, yy*k, zz))
             self.Refresh(False)
 
     def save_bitmap(self, path):
@@ -106,8 +117,13 @@ class Canvas3D(glcanvas.GLCanvas):
         k = 0.9 if evt.GetWheelRotation()>0 else 1/0.9
         self.manager.set_pers(l=self.manager.l*k)
         self.Refresh(False)
-        #self.update = True
+        #self.update()
         
+def make_bitmap(bmp):
+    img = bmp.ConvertToImage()
+    img.Resize((20, 20), (2, 2))
+    return img.ConvertToBitmap()
+
 class Viewer3D(wx.Panel):
     def __init__( self, parent, manager=None):
         wx.Panel.__init__(self, parent, id = wx.ID_ANY, pos = wx.DefaultPosition, size = wx.Size( 500,300 ), style = wx.TAB_TRAVERSAL )
@@ -121,26 +137,35 @@ class Viewer3D(wx.Panel):
 
         #self.SetIcon(wx.Icon('data/logo.ico', wx.BITMAP_TYPE_ICO))
 
-        self.btn_x = wx.BitmapButton( self.toolbar, wx.ID_ANY, wx.Bitmap( osp.join(root, 'imgs/x-axis.png'), wx.BITMAP_TYPE_ANY ), wx.DefaultPosition, wx.DefaultSize, wx.BU_AUTODRAW )
-        tsizer.Add( self.btn_x, 0, wx.ALL, 1 )
-        self.btn_y = wx.BitmapButton( self.toolbar, wx.ID_ANY, wx.Bitmap( osp.join(root, 'imgs/y-axis.png'), wx.BITMAP_TYPE_ANY ), wx.DefaultPosition, wx.DefaultSize, wx.BU_AUTODRAW )
-        tsizer.Add( self.btn_y, 0, wx.ALL, 1 )
-        self.btn_z = wx.BitmapButton( self.toolbar, wx.ID_ANY, wx.Bitmap( osp.join(root, 'imgs/z-axis.png'), wx.BITMAP_TYPE_ANY ), wx.DefaultPosition, wx.DefaultSize, wx.BU_AUTODRAW )
-        tsizer.Add( self.btn_z, 0, wx.ALL, 1 )
+        self.btn_x = wx.BitmapButton( self.toolbar, wx.ID_ANY, make_bitmap(wx.Bitmap( osp.join(root, 'imgs/x-axis.png'), wx.BITMAP_TYPE_ANY )), wx.DefaultPosition, wx.DefaultSize, wx.BU_AUTODRAW )
+        tsizer.Add( self.btn_x, 0, wx.ALIGN_CENTER|wx.ALL, 0 )
+        self.btn_y = wx.BitmapButton( self.toolbar, wx.ID_ANY, make_bitmap(wx.Bitmap( osp.join(root, 'imgs/y-axis.png'), wx.BITMAP_TYPE_ANY )), wx.DefaultPosition, wx.DefaultSize, wx.BU_AUTODRAW )
+        tsizer.Add( self.btn_y, 0, wx.ALIGN_CENTER|wx.ALL, 0 )
+        self.btn_z = wx.BitmapButton( self.toolbar, wx.ID_ANY, make_bitmap(wx.Bitmap( osp.join(root, 'imgs/z-axis.png'), wx.BITMAP_TYPE_ANY )), wx.DefaultPosition, wx.DefaultSize, wx.BU_AUTODRAW )
+        tsizer.Add( self.btn_z, 0, wx.ALIGN_CENTER|wx.ALL, 0 )
         tsizer.Add(wx.StaticLine( self.toolbar, wx.ID_ANY,  wx.DefaultPosition, wx.DefaultSize, wx.LI_VERTICAL), 0, wx.ALL|wx.EXPAND, 2 )
-        self.btn_pers = wx.BitmapButton( self.toolbar, wx.ID_ANY, wx.Bitmap( osp.join(root, 'imgs/isometric.png'), wx.BITMAP_TYPE_ANY ), wx.DefaultPosition, wx.DefaultSize, wx.BU_AUTODRAW )
-        tsizer.Add( self.btn_pers, 0, wx.ALL, 1 )
-        self.btn_orth = wx.BitmapButton( self.toolbar, wx.ID_ANY, wx.Bitmap( osp.join(root, 'imgs/parallel.png'), wx.BITMAP_TYPE_ANY ), wx.DefaultPosition, wx.DefaultSize, wx.BU_AUTODRAW )
-        tsizer.Add( self.btn_orth, 0, wx.ALL, 1 )
+        self.btn_pers = wx.BitmapButton( self.toolbar, wx.ID_ANY, make_bitmap(wx.Bitmap( osp.join(root, 'imgs/isometric.png'), wx.BITMAP_TYPE_ANY )), wx.DefaultPosition, wx.DefaultSize, wx.BU_AUTODRAW )
+        tsizer.Add( self.btn_pers, 0, wx.ALIGN_CENTER|wx.ALL, 0 )
+        self.btn_orth = wx.BitmapButton( self.toolbar, wx.ID_ANY, make_bitmap(wx.Bitmap( osp.join(root, 'imgs/parallel.png'), wx.BITMAP_TYPE_ANY )), wx.DefaultPosition, wx.DefaultSize, wx.BU_AUTODRAW )
+        tsizer.Add( self.btn_orth, 0, wx.ALIGN_CENTER|wx.ALL, 0 )
         tsizer.Add(wx.StaticLine( self.toolbar, wx.ID_ANY,  wx.DefaultPosition, wx.DefaultSize, wx.LI_VERTICAL), 0, wx.ALL|wx.EXPAND, 2 )
-        self.btn_open = wx.BitmapButton( self.toolbar, wx.ID_ANY, wx.Bitmap(osp.join(root, 'imgs/open.png'), wx.BITMAP_TYPE_ANY ), wx.DefaultPosition, wx.DefaultSize, wx.BU_AUTODRAW )
-        tsizer.Add( self.btn_open, 0, wx.ALL, 1 )
-        self.btn_stl = wx.BitmapButton( self.toolbar, wx.ID_ANY, wx.Bitmap(osp.join(root, 'imgs/stl.png'), wx.BITMAP_TYPE_ANY ), wx.DefaultPosition, wx.DefaultSize, wx.BU_AUTODRAW )
-        tsizer.Add( self.btn_stl, 0, wx.ALL, 1 )
-        
-        self.btn_color = wx.ColourPickerCtrl( self.toolbar, wx.ID_ANY, wx.Colour( 128, 128, 128 ), wx.DefaultPosition, wx.DefaultSize, wx.CLRP_DEFAULT_STYLE )
-        tsizer.Add( self.btn_color, 0, wx.ALIGN_CENTER|wx.ALL, 1 )
+        self.btn_open = wx.BitmapButton( self.toolbar, wx.ID_ANY, make_bitmap(wx.Bitmap(osp.join(root, 'imgs/open.png'), wx.BITMAP_TYPE_ANY )), wx.DefaultPosition, wx.DefaultSize, wx.BU_AUTODRAW )
+        tsizer.Add( self.btn_open, 0, wx.ALIGN_CENTER|wx.ALL, 0 )
+        self.btn_stl = wx.BitmapButton( self.toolbar, wx.ID_ANY, make_bitmap(wx.Bitmap(osp.join(root, 'imgs/stl.png'), wx.BITMAP_TYPE_ANY )), wx.DefaultPosition, wx.DefaultSize, wx.BU_AUTODRAW )
+        tsizer.Add( self.btn_stl, 0, wx.ALIGN_CENTER|wx.ALL, 0 )
+        #pan = wx.Panel(self.toolbar, size=(50, 50))
+        self.btn_color = wx.ColourPickerCtrl( self.toolbar, wx.ID_ANY, wx.Colour( 128, 128, 128 ), wx.DefaultPosition, [(33, 38), (-1, -1)][platform.system() in ['Windows', 'Linux']], wx.CLRP_DEFAULT_STYLE )
+        tsizer.Add( self.btn_color, 0, wx.ALIGN_CENTER|wx.ALL|(0, wx.EXPAND)[platform.system() in ['Windows', 'Linux']], 0 )
+        tsizer.Add(wx.StaticLine( self.toolbar, wx.ID_ANY,  wx.DefaultPosition, wx.DefaultSize, wx.LI_VERTICAL), 0, wx.ALL|wx.EXPAND, 2 )
+        self.cho_light = wx.Choice( self.toolbar, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, ['force light', 'normal light', 'weak light', 'off light'], 0 )
+        self.cho_light.SetSelection( 1 )
+        tsizer.Add( self.cho_light, 0, wx.ALIGN_CENTER|wx.ALL, 1 )
+        self.cho_bg = wx.Choice( self.toolbar, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, ['force scatter', 'normal scatter', 'weak scatter', 'off scatter'], 0 )
+        self.cho_bg.SetSelection( 1 )
+        tsizer.Add( self.cho_bg, 0, wx.ALIGN_CENTER|wx.ALL, 1 )
+
         self.toolbar.SetSizer( tsizer )
+        tsizer.Layout()
 
         self.settingbar = wx.Panel( self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.TAB_TRAVERSAL )
         ssizer = wx.BoxSizer( wx.HORIZONTAL )
@@ -152,7 +177,7 @@ class Viewer3D(wx.Panel):
         cho_objChoices = ['None']
         self.cho_obj = wx.Choice( self.settingbar, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, cho_objChoices, 0 )
         self.cho_obj.SetSelection( 0 )
-        ssizer.Add( self.cho_obj, 0, wx.ALL, 1 )
+        ssizer.Add( self.cho_obj, 0, wx.ALIGN_CENTER|wx.ALL, 1 )
         
         self.chk_visible = wx.CheckBox( self.settingbar, wx.ID_ANY, u"visible", wx.DefaultPosition, wx.DefaultSize, 0 )
         ssizer.Add( self.chk_visible, 0, wx.ALIGN_CENTER|wx.LEFT, 10 )
@@ -175,7 +200,7 @@ class Viewer3D(wx.Panel):
         cho_objChoices = ['mesh', 'grid']
         self.cho_mode = wx.Choice( self.settingbar, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, cho_objChoices, 0 )
         self.cho_mode.SetSelection( 0 )
-        ssizer.Add( self.cho_mode, 0, wx.ALL, 1 )
+        ssizer.Add( self.cho_mode, 0, wx.ALIGN_CENTER|wx.ALL, 1 )
 
         sizer.Add( self.toolbar, 0, wx.EXPAND |wx.ALL, 0 )
         sizer.Add( self.canvas, 1, wx.EXPAND |wx.ALL, 0)
@@ -196,6 +221,8 @@ class Viewer3D(wx.Panel):
 
         self.cho_obj.Bind( wx.EVT_CHOICE, self.on_select )
         self.cho_mode.Bind( wx.EVT_CHOICE, self.on_mode )
+        self.cho_light.Bind( wx.EVT_CHOICE, self.on_light )
+        self.cho_bg.Bind( wx.EVT_CHOICE, self.on_bg )
         self.chk_visible.Bind( wx.EVT_CHECKBOX, self.on_visible)
         self.sli_blend.Bind( wx.EVT_SCROLL, self.on_blend )
         self.col_color.Bind( wx.EVT_COLOURPICKER_CHANGED, self.on_color )
@@ -224,6 +251,16 @@ class Viewer3D(wx.Panel):
     def on_bgcolor(self, event):
         c = tuple(np.array(event.GetColour()[:3])/255)
         self.canvas.manager.set_background(c)
+        self.canvas.Refresh(False)
+
+    def on_bg(self, event):
+        scatter = 3 - self.cho_bg.GetSelection()
+        self.canvas.manager.set_bright_scatter(scatter=scatter/3)
+        self.canvas.Refresh(False)
+
+    def on_light(self, event):
+        bright = 3 - self.cho_light.GetSelection()
+        self.canvas.manager.set_bright_scatter(bright=bright/3)
         self.canvas.Refresh(False)
 
     def on_save(self, evt):

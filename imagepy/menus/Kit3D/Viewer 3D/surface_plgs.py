@@ -17,7 +17,7 @@ class Show(Free):
 
 class Surface2D(Simple):
     title = '2D Surface'
-    note = ['8-bit', '16-bit']
+    note = ['8-bit', '16-bit', 'float']
     para = {'name':'undifine', 'scale':2, 'sigma':2,'h':1}
     view = [(str, 'name', 'Name', ''),
             (int, 'scale', (1,5), 0, 'down scale', 'pix'),
@@ -59,14 +59,14 @@ class Surface3D(Filter):
     def preview(self, ips, para):
         ips.lut[:] = self.buflut
         ips.lut[:para['thr']] = [255,0,0]
-        ips.update = 'pix'
+        ips.update()
 
     def run(self, ips, snap, img, para = None):
         imgs = ips.imgs
 
     def cancel(self, ips):
         ips.lut = self.buflut
-        ips.update = 'pix'
+        ips.update()
 
     def run(self, ips, snap, img, para = None):
         ips.lut = self.buflut
@@ -77,4 +77,29 @@ class Surface3D(Filter):
         self.frame.Raise()
         self.frame = None
 
-plgs = [Show, Surface2D, Surface3D]
+class ImageCube(Simple):
+    modal = False
+    title = '3D Image Cube'
+    note = ['8-bit', 'rgb', 'stack3d']
+    para = {'name':'undifine', 'ds':1, 'color':(0,255,0), 'surface':True, 'box':False}
+    view = [(str, 'name', 'Name', 'xxx-surface'),
+            (bool, 'surface', 'show surface'),
+            (int, 'ds', (1,20), 0, 'down scale', 'pix'),
+            (bool, 'box', 'show box'),
+            ('color', 'color', 'box color', 'rgb')]
+
+    def load(self, para):
+        self.frame = myvi.Frame3D.figure(IPy.curapp, title='3D Canvas')
+        return True
+
+    def run(self, ips, imgs, para = None):
+        if para['surface']:
+            vts, fs, ns, cs = myvi.build_img_cube(imgs, para['ds'])
+            obj = self.frame.viewer.add_surf_asyn(para['name']+'-surface', vts, fs, ns, cs)
+        if para['box']:
+            vts, fs, ns, cs = myvi.build_img_box(imgs, para['color'])
+            obj = self.frame.viewer.add_surf_asyn(para['name']+'-box', vts, fs, ns, cs, mode='grid')
+        self.frame.Raise()
+        self.frame = None
+
+plgs = [Show, Surface2D, Surface3D, ImageCube]

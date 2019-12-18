@@ -6,7 +6,7 @@ Created on Sat Oct 15 10:03:00 2016
 """
 
 import wx, os.path as osp
-from wx.lib.pubsub import pub
+from pubsub import pub
 
 root_dir = osp.abspath(osp.dirname(__file__))
 
@@ -95,15 +95,8 @@ def showmd(title, cont, url=''):
 pub.subscribe(showmd, 'showmd')
 def show_md(title, cont, url=''):
     wx.CallAfter(pub.sendMessage, 'showmd', title=title, cont=cont, url=url)
-'''
-def stepmacros(macros):
-    macros.next()
 
-pub.subscribe(stepmacros, 'stepmacros')
-def step_macros(macros):
-    wx.CallAfter(pub.sendMessage, "stepmacros", macros=macros)
-'''
-def alert(info, title="ImagePy Alert!"):
+def _alert(info, title="ImagePy Alert!"):
     if uimode()=='no':
         print('ImagePy Alert >>> %s'%title)
         print(info)
@@ -111,6 +104,11 @@ def alert(info, title="ImagePy Alert!"):
         dialog=wx.MessageDialog(curapp, info, title, wx.OK)
         dialog.ShowModal() == wx.ID_OK
         dialog.Destroy()
+
+pub.subscribe(_alert, 'alert')
+
+def alert(info, title="ImagePy Alert!"):
+    wx.CallAfter(pub.sendMessage, 'alert', info=info, title=title)
 
 # MT alert = lambda info, title='image-py':callafter(alert_, *(info, title))
 
@@ -121,14 +119,14 @@ def yes_no(info, title="ImagePy Yes-No ?!"):
     dic = {wx.ID_YES:'yes', wx.ID_NO:'no', wx.ID_CANCEL:'cancel'}
     return dic[rst]
 
-def getpath(title, filt, k, para=None):
+def getpath(title, filt, k, para=None, name=''):
     """Get the defaultpath of the ImagePy"""
     from .core import manager
     dpath = manager.ConfigManager.get('defaultpath')
     if dpath ==None:
         dpath = root_dir # './'
     dic = {'open':wx.FD_OPEN, 'save':wx.FD_SAVE}
-    dialog = wx.FileDialog(curapp, title, dpath, '', filt, dic[k])
+    dialog = wx.FileDialog(curapp, title, dpath, name, filt, dic[k])
     rst = dialog.ShowModal()
     path = None
     if rst == wx.ID_OK:
@@ -189,7 +187,10 @@ def show_table(data, title):
 def showlog(title, cont):
     from .ui.logwindow import TextLog
     TextLog.write(cont, title)
+
 pub.subscribe(showlog, 'showlog')
+def show_log(title, cont):
+    wx.CallAfter(pub.sendMessage, 'showlog', cont=cont, title=title)
 
 def write(cont, title='ImagePy'):
     if curapp is None:
@@ -209,7 +210,7 @@ def plot(title, gtitle='Graph', labelx='X-Unit', labely='Y-Unit'):
 
 def set_info(i):
     if curapp is None: print('ImagePy Info >>> %s'%i)
-    else: wx.CallAfter(curapp.set_info, i)
+    else: wx.CallAfter(curapp.set_info, str(i))
     # MT callafter(curapp.set_info, i)
 
 def run(cmd):

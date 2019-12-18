@@ -30,6 +30,7 @@ class To8bit(Simple):
             minv, maxv = ips.get_updown()
             for i in range(n):
                 self.progress(i, len(imgs))
+
                 if ips.imgtype == 'rgb':
                     img8.append(imgs[i].mean(axis=2).astype(np.uint8))
                 else:
@@ -163,5 +164,5 @@ class ToFloat64(Simple):
                     k = 255.0/(max(1e-10, maxv-minv))
                     img64.append(imgs[i].astype(np.float64))
         ips.set_imgs(img64)
-        
+
 plgs = [To8bit, ToRGB, '-', ToUint16, ToInt32, ToFloat32, ToFloat64]

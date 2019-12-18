@@ -8,7 +8,8 @@ Created on Wed Oct 19 17:35:09 2016
 from imagepy.core.engine import Tool
 import numpy as np
 from imagepy.core.manager import ColorManager
-from imagepy.core.draw.fill import floodfill
+# from imagepy.core.draw.fill import floodfill
+from skimage.morphology import flood_fill, flood
 
 class Plugin(Tool):
     title = 'Flood Fill'
@@ -18,13 +19,15 @@ class Plugin(Tool):
         
     def mouse_down(self, ips, x, y, btn, **key):
         ips.snapshot()
-        msk = floodfill(ips.img, x, y, self.para['tor'], self.para['con']=='8-connect')
-        #plt.imshow(msk)
-        #plt.show()
-        color = ColorManager.get_front()
-        if ips.get_nchannels()==1:color = np.mean(color)
-        ips.img[msk] = color
-        ips.update = 'pix'
+        img, color = ips.img, ColorManager.get_front()
+        connectivity=(self.para['con']=='8-connect')+1
+        img = ips.img.reshape((ips.img.shape+(1,))[:3])
+        msk = np.ones(img.shape[:2], dtype=np.bool)
+        for i in range(img.shape[2]):
+            msk &= flood(img[:,:,i], (int(y),int(x)), 
+                connectivity=connectivity, tolerance=self.para['tor'])
+        img[msk] = np.mean(color) if img.shape[2]==1 else color
+        ips.update()
     
     def mouse_up(self, ips, x, y, btn, **key):
         pass

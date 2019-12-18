@@ -30,10 +30,12 @@ class VirtualListCtrl(wx.ListCtrl):
 class Plugin( wx.Panel ):
     title = 'Shotcut Editor'
     single = None
+
     def __init__( self, parent):
         wx.Frame.__init__ ( self, parent, id = wx.ID_ANY,
                             pos = wx.DefaultPosition, size = wx.Size( 500,300 ), 
                             style = wx.DEFAULT_FRAME_STYLE|wx.TAB_TRAVERSAL )
+
         bSizer1 = wx.BoxSizer( wx.VERTICAL )
         bSizer2 = wx.BoxSizer( wx.HORIZONTAL )
         self.m_staticText1 = wx.StaticText( self, wx.ID_ANY, "Search:", 
@@ -54,7 +56,11 @@ class Plugin( wx.Panel ):
         # Connect Events
         self.txt_search.Bind( wx.EVT_TEXT, self.on_search )
         self.lst_plgs.Bind(wx.EVT_LIST_KEY_DOWN, self.on_run)
+        self.lst_plgs.Bind( wx.EVT_LIST_ITEM_ACTIVATED, self.on_active)
+        self.lst_plgs.Bind( wx.EVT_LIST_ITEM_SELECTED, self.on_select)
+        
         self.load()
+        self.active = -1
     
     #def list_plg(self, lst, items
     def load(self):
@@ -71,7 +77,8 @@ class Plugin( wx.Panel ):
         wd = self.txt_search.GetValue()
         self.buf = [i for i in self.plgs if wd.lower() in i[0].lower()]
         self.lst_plgs.set_data(self.buf)
-        
+        self.Refresh()
+
     def ist(self, cont, txt):
         sep = cont.split('-')
         if txt in sep: sep.remove(txt)
@@ -81,7 +88,15 @@ class Plugin( wx.Panel ):
         if len(sep)>0:cas.append(sep[-1])
         return '-'.join(cas)
 
+    def on_active(self, event):
+        self.active = event.GetIndex()
+
+    def on_select(self, event):
+        self.active = -1
+        
     def on_run(self, event):
+        if self.active != event.GetIndex():
+            return IPy.alert('please double click to activate an item')
         code = event.GetKeyCode()
         title = self.buf[event.GetIndex()][0]
         txt = self.buf[event.GetIndex()][1]
@@ -105,6 +120,6 @@ class Plugin( wx.Panel ):
         ShotcutManager.set(title, txt)
         #PluginsManager.plgs[self.buf[event.GetIndex()][0]]().start()
         
-    def __del__(self):
-        print('hahaha')
+    def close(self):
+        print('close')
         ShotcutManager.write()

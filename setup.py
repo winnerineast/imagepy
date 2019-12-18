@@ -14,7 +14,7 @@ def get_data_files():
 
 if __name__ == '__main__':
     setup(name='imagepy',
-        version='0.20',
+        version='0.22',
         url='https://github.com/Image-Py/imagepy',
         description='interactive python image-processing plugin framework',
         long_description=descr,
@@ -22,11 +22,22 @@ if __name__ == '__main__':
         author_email='yxdragon@imagepy.org',
         license='BSD 3-clause',
         packages=setuptools.find_packages(),
+        entry_points={
+        'console_scripts': [
+            'imagepy = imagepy:show',
+        ],
+    },
         package_data=get_data_files(),
         install_requires=[
             'scikit-image',
+            'scikit-learn',
             'shapely',
-            'wxpython-installer',
+            'pypubsub',
+            'wxpython',
+            'read_roi',
+            'numpy-stl',
+            'pydicom',
+            'pystackreg',
             'pandas',
             'xlrd',
             'xlwt',

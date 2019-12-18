@@ -66,7 +66,7 @@ class Plugin(Tool):
             if isinstance(ips.mark, Coordinate):
                 ips.mark.report(ips.title)
             return
-        lim = 5.0/key['canvas'].get_scale() 
+        lim = 5.0/key['canvas'].scale 
         if btn==1:
             if isinstance(ips.mark, Coordinate):
                 self.curobj = ips.mark.pick(x, y, lim)
@@ -77,7 +77,7 @@ class Plugin(Tool):
                 ips.mark = Coordinate(unit=ips.unit)
             ips.mark.add((x,y))
             self.curobj = ips.mark.pick(x,y, lim)
-            ips.update = True
+            ips.update()
             self.odx, self.ody = x, y
     
     def mouse_up(self, ips, x, y, btn, **key):
@@ -85,14 +85,14 @@ class Plugin(Tool):
     
     def mouse_move(self, ips, x, y, btn, **key):
         if not isinstance(ips.mark, Coordinate):return
-        lim = 5.0/key['canvas'].get_scale()        
+        lim = 5.0/key['canvas'].scale        
         if btn==None:
             self.cursor = wx.CURSOR_CROSS
             if ips.mark.snap(x, y, lim)!=None:
                 self.cursor = wx.CURSOR_HAND
         elif btn==1:
             ips.mark.draged(self.odx, self.ody, x, y, self.curobj)
-            ips.update = True
+            ips.update()
         self.odx, self.ody = x, y
         
     def mouse_wheel(self, ips, x, y, d, **key):

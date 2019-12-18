@@ -5,6 +5,7 @@ Created on Wed Dec 21 15:05:16 2016
 """
 from .convert import roi2shape, shape2roi
 from shapely.affinity import affine_transform
+from shapely.ops import transform
         
 class ROI:
     def __init__(self):pass
@@ -29,9 +30,18 @@ class ROI:
     def union(self, roi):
         return shape2roi(roi2shape(roi).union(roi2shape(self)))
         
+    def intersect(self, roi):
+        return shape2roi(roi2shape(roi).intersection(roi2shape(self)))
+
+    def symmetric_diff(self, roi):
+        return shape2roi(roi2shape(roi).symmetric_difference(roi2shape(self)))
+
     def diff(self, roi):
         return shape2roi(roi2shape(self).difference(roi2shape(roi)))
 
     def affine(self, m, o):
         mat = [m[0,0], m[0,1], m[1,0], m[1,1], o[0], o[1]]
         return shape2roi(affine_transform(roi2shape(self), mat))
+
+    def transform(self, f):
+        return shape2roi(transform(f, roi2shape(self)))

@@ -5,7 +5,7 @@ from ..core.manager import ImageManager, WindowsManager, TableManager
 from .widgets import *
 import weakref
 
-widgets = { 'ctrl':None, 'slide':FloatSlider, int:NumCtrl,
+widgets = { 'ctrl':None, 'slide':FloatSlider, int:NumCtrl, 'path':PathCtrl,
             float:NumCtrl, 'lab':Label, bool:Check, str:TextCtrl, 
             list:Choice, 'img':ImageList, 'tab':TableList, 'color':ColorCtrl, 
             'any':AnyType, 'chos':Choices, 'fields':TableFields,
@@ -67,15 +67,6 @@ class ParaDialog (wx.Dialog):
 
     def parse(self, para) :
         self.add_ctrl_(widgets[para[0]], *para[1:])
-        #self.funcs[para[0]](*para[1:])
-    '''
-    def add_ctrl(self, key, ctrl):
-        self.lst.Add( ctrl, 0, wx.EXPAND, 5 )
-        if not key is None:
-            self.ctrl_dic[key] = ctrl
-            if hasattr(ctrl, 'set_handle'):
-                ctrl.set_handle(lambda x=None : self.para_changed(key))
-    '''
 
     def add_ctrl_(self, Ctrl, key, p):
         ctrl = Ctrl(self, *p)

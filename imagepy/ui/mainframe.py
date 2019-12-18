@@ -11,6 +11,7 @@ from .. import IPy, root_dir
 #from ui import pluginloader, toolsloader
 from . import pluginloader, toolsloader, widgetsloader
 from ..core.manager import ConfigManager, PluginsManager, TaskManager, ImageManager
+from ..core.loader import loader
 from ..core.engine import Macros
 from .canvasframe import CanvasNoteBook
 from .tableframe import TableNoteBook
@@ -36,7 +37,7 @@ class ImagePy(wx.Frame):
         #self.SetBackgroundColour( wx.SystemSettings.GetColour( wx.SYS_COLOUR_3DLIGHT ) )
         self.SetIcon(wx.Icon(logopath, wx.BITMAP_TYPE_ICO))
         IPy.curapp = self
-        self.SetSizeHints( wx.Size(900,700) if IPy.uimode() == 'ipy' else wx.Size( 580,-1 ))
+        self.SetSizeHints( wx.Size(1024,768) if IPy.uimode() == 'ipy' else wx.Size( 700,-1 ))
         
 
         self.menubar = pluginloader.buildMenuBarByPath(self, 'menus', 'plugins', None, True)
@@ -50,6 +51,7 @@ class ImagePy(wx.Frame):
         print(IPy.uimode())
         if IPy.uimode()=='ipy': self.load_aui()
         else: self.load_ijui()
+        self.load_document()
         self.Fit()
 
 
@@ -137,17 +139,22 @@ class ImagePy(wx.Frame):
             .PaneBorder( False ).Resizable().FloatingSize( wx.DefaultSize ) )
 
     def on_pan_close(self, event):
-        return
         if event.GetPane().window in [self.toolbar, self.widgets]:
             event.Veto()
-            event.GetPane().Show(False)
-            self.auimgr.Update()
+        if hasattr(event.GetPane().window, 'close'):
+            event.GetPane().window.close()
+
+    def load_document(self):
+        from glob import glob
+        extends = glob('plugins/*/doc')
+        for i in extends: loader.build_document(i)
+        loader.build_document('doc')
 
     def reload_plugins(self, report=False, menus=True, tools=False, widgets=False):
-        print(menus, tools, widgets)
         if menus: pluginloader.buildMenuBarByPath(self, 'menus', 'plugins', self.menubar, report)
         if tools: toolsloader.build_tools(self, 'tools', 'plugins', self.toolbar, report)
         if widgets: widgetsloader.build_widgets(self, 'widgets', 'plugins', self.widgets)
+        self.load_document()
         if IPy.uimode()!='ipy': self.Fit()
 
     def hold(self):
@@ -195,6 +202,7 @@ class ImagePy(wx.Frame):
         self.canvasnb.set_background(img)
 
     def on_close(self, event):
+        print('close')
         ConfigManager.write()
         self.auimgr.UnInit()
         del self.auimgr

@@ -34,7 +34,7 @@ class PasteMove(Tool):
             bliter.blit(img, ci, y, x)
                         
             ips.reset(True)
-            ips.update = 'pix'
+            ips.update()
         
     def mouse_move(self, ips, x, y, btn, **key):
         if self.moving==True and btn!=None:
@@ -42,7 +42,7 @@ class PasteMove(Tool):
             self.cx += x-self.ox
             self.cy += y-self.oy
             self.ox, self.oy = x, y
-            ips.update = True
+            ips.update()
     
 class Paste(Simple):
     title = 'Paste'
@@ -69,14 +69,14 @@ class Clear(Filter):
     note = ['req_roi', 'all', 'auto_snap', 'not_channel']
 
     def run(self, ips, snap, img, para=None):
-        img[ips.get_msk()] = ColorManager.get_back(snap.ndim==2)
+        img[ips.get_msk()] = ColorManager.get_back(ips.channels!=3)
         
 class ClearOut(Filter):
     title = 'Clear Out'
     note = ['req_roi', 'all', 'auto_snap', 'not_channel']
 
     def run(self, ips, snap, img, para=None):
-        img[ips.get_msk('out')] = ColorManager.get_back(snap.ndim==2)
+        img[ips.get_msk('out')] = ColorManager.get_back(ips.channels!=3)
         
 class Copy(Simple):
     title = 'Copy'
@@ -99,14 +99,14 @@ class Sketch(Filter):
     view = [(int, 'width', (0,30), 0,  'width', 'pix')]
 
     def run(self, ips, snap, img, para = None):
-        img[ips.get_msk(para['width'])] = ColorManager.get_front(snap.ndim==2)
+        img[ips.get_msk(para['width'])] = ColorManager.get_front(ips.channels!=3)
         
 class Fill(Filter):
     title = 'Fill'
     note = ['req_roi', 'all', 'auto_snap', 'not_channel']
 
     def run(self, ips, snap, img, para=None):
-        img[ips.get_msk()] = ColorManager.get_front(snap.ndim==2)
+        img[ips.get_msk()] = ColorManager.get_front(ips.channels!=3)
         
 class Undo(Simple):
     title = 'Undo'

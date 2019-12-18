@@ -1,5 +1,5 @@
 from ...ui.widgets import HistCanvas, CMapPanel, CMapSelCtrl, FloatSlider
-from  imagepy.core.manager import ColorManager
+from imagepy.core.manager import ColorManager
 from imagepy import IPy
 import numpy as np
 import wx
@@ -85,14 +85,14 @@ class Plugin( wx.Panel ):
 		if ips is None: return
 		cmap = CMapPanel.linear_color(self.cmap.GetValue())
 		ips.lut = cmap
-		ips.update = 'pix'
+		ips.update()
 
 	def on_cmapsel(self, event):
 		ips = IPy.get_ips()
 		if ips is None: return
 		key = self.cmapsel.GetValue()
 		ips.lut = ColorManager.get_lut(key)
-		ips.update = 'pix'
+		ips.update()
 	
 	# Virtual event handlers, overide them in your derived class
 	def on_low( self, event ):
@@ -101,10 +101,11 @@ class Plugin( wx.Panel ):
 		if self.sli_high.GetValue()<self.sli_low.GetValue():
 			self.sli_high.SetValue(self.sli_low.GetValue())
 		ips.range = (self.sli_low.GetValue(), self.sli_high.GetValue())
+		ips.chan_rg = ips.range
 		lim1 = 1.0 * (self.sli_low.GetValue() - self.range[0])/(self.range[1]-self.range[0])
 		lim2 = 1.0 * (self.sli_high.GetValue() - self.range[0])/(self.range[1]-self.range[0])
 		self.histpan.set_lim(lim1*255, lim2*255)
-		ips.update = 'pix'
+		ips.update()
 	
 	def on_high( self, event ):
 		ips = IPy.get_ips()
@@ -112,10 +113,11 @@ class Plugin( wx.Panel ):
 		if self.sli_low.GetValue()>self.sli_high.GetValue():
 			self.sli_low.SetValue(self.sli_high.GetValue())
 		ips.range = (self.sli_low.GetValue(), self.sli_high.GetValue())
+		ips.chan_rg = ips.range
 		lim1 = 1.0 * (self.sli_low.GetValue() - self.range[0])/(self.range[1]-self.range[0])
 		lim2 = 1.0 * (self.sli_high.GetValue() - self.range[0])/(self.range[1]-self.range[0])
 		self.histpan.set_lim(lim1*255, lim2*255)
-		ips.update = 'pix'
+		ips.update()
 	
 	def on_8bit( self, event ):
 		ips = IPy.get_ips()
@@ -128,7 +130,7 @@ class Plugin( wx.Panel ):
 		self.sli_low.SetValue(0)
 		self.sli_high.SetValue(255)
 		self.histpan.set_lim(0,255)
-		ips.update = 'pix'
+		ips.update()
 	
 	def on_minmax( self, event ):
 		ips = IPy.get_ips()
@@ -142,7 +144,7 @@ class Plugin( wx.Panel ):
 		self.sli_low.SetValue(minv)
 		self.sli_high.SetValue(maxv)
 		self.histpan.set_lim(0,255)
-		ips.update = 'pix'
+		ips.update()
 	
 	def on_slice( self, event ):
 		ips = IPy.get_ips()
@@ -153,5 +155,5 @@ class Plugin( wx.Panel ):
 	def on_stack( self, event ):
 		ips = IPy.get_ips()
 		if ips is None: return
-		hists = ips.histogram(stack=True)
+		hists = ips.histogram(slices=True)
 		self.histpan.SetValue(hists)

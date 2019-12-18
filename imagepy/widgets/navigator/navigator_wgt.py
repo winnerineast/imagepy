@@ -5,7 +5,7 @@ import wx
 
 class Plugin ( wx.Panel ):
 	title = 'Navigator'
-	scales = [0.03125, 0.0625, 0.125, 0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4, 5, 8, 10]
+	scales = [0.03125, 0.0625, 0.125, 0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4, 5, 8, 10, 15, 20, 30, 50]
 	def __init__( self, parent ):
 		
 
@@ -18,7 +18,7 @@ class Plugin ( wx.Panel ):
 		self.viewport = ViewPort( self)
 		bSizer3.Add( self.viewport, 1, wx.EXPAND |wx.ALL, 5 )
 		
-		self.slider = wx.Slider( self, wx.ID_ANY, 6, 0, 13, wx.DefaultPosition, wx.DefaultSize, wx.SL_LEFT|wx.SL_VERTICAL|wx.SL_SELRANGE )
+		self.slider = wx.Slider( self, wx.ID_ANY, 6, 0, len(self.scales), wx.DefaultPosition, wx.DefaultSize, wx.SL_LEFT|wx.SL_VERTICAL|wx.SL_SELRANGE|wx.SL_INVERSE )
 		bSizer3.Add( self.slider, 0, wx.ALL|wx.EXPAND, 0 )
 		
 		
@@ -55,7 +55,7 @@ class Plugin ( wx.Panel ):
 		self.SetSizer( bSizer1 )
 		self.Layout()
 
-		self.slider.Bind( wx.EVT_SCROLL_CHANGED, self.on_zoom )
+		self.slider.Bind( wx.EVT_SCROLL, self.on_zoom )
 		self.btn_apply.Bind( wx.EVT_BUTTON, self.on_apply )
 		self.btn_fit.Bind( wx.EVT_BUTTON, self.on_fit )
 		self.btn_one.Bind( wx.EVT_BUTTON, self.on_one )
@@ -64,50 +64,48 @@ class Plugin ( wx.Panel ):
 	def on_apply(self, event):
 		win = IPy.get_window()
 		if win is None: return
-		img = win.canvas.ips.img
+		img = win.ips.img
 		step = max(max(img.shape[:2])//300,1)
-		self.viewport.set_img(win.canvas.ips.lookup(img[::step,::step]), img.shape)
-		self.viewport.set_box(win.canvas.imgbox, win.canvas.box)
+		self.viewport.set_img(win.ips.lookup(img[::step,::step]), img.shape)
+		self.viewport.set_box(win.canvas.conbox, win.canvas.winbox)
 
 	def on_zoom(self, event):
 		k = self.scales[self.slider.GetValue()]
 		self.label.SetLabel('%.2f%%'%(k*100))
 		win = IPy.get_window()
 		if win is None: return
-		a,b,c,d = win.canvas.box
-		x, y = win.canvas.to_data_coor(c/2, d/2)
-		win.canvas.scaleidx = self.slider.GetValue()
-		win.canvas.zoom(k, x, y)
-		win.canvas.ips.update = 'pix'
-		self.viewport.set_box(win.canvas.imgbox, win.canvas.box)
+		a,b,c,d = win.canvas.winbox
+		win.canvas.scaidx = self.slider.GetValue()
+		win.canvas.zoom(k, (a+c)/2, (b+d)/2)
+		win.ips.update()
+		self.viewport.set_box(win.canvas.conbox, win.canvas.winbox)
 
 	def on_fit(self, event):
 		win = IPy.get_window()
 		if win is None: return
-		win.canvas.self_fit()
-		win.canvas.ips.update = 'pix'
-		self.slider.SetValue(win.canvas.scaleidx)
+		win.canvas.fit()
+		win.ips.update()
+		print(type(win.canvas))
+		self.slider.SetValue(win.canvas.scaidx)
 		k = self.scales[self.slider.GetValue()]
 		self.label.SetLabel('%.2f%%'%(k*100))
-		self.viewport.set_box(win.canvas.imgbox, win.canvas.box)
+		self.viewport.set_box(win.canvas.conbox, win.canvas.winbox)
 
 	def on_one(self, event):
 		win = IPy.get_window()
 		if win is None: return
-		a,b,c,d = win.canvas.box
-		x, y = win.canvas.to_data_coor(c/2, d/2)
-		win.canvas.scaleidx = self.scales.index(1)
-		win.canvas.zoom(1, x, y)
-		win.canvas.ips.update = 'pix'
-		self.slider.SetValue(win.canvas.scaleidx)
+		a,b,c,d = win.canvas.winbox
+		win.canvas.scaidx = self.scales.index(1)
+		win.canvas.zoom(1, (a+c)/2, (b+d)/2)
+		win.ips.update()
+		self.slider.SetValue(win.canvas.scaidx)
 		self.label.SetLabel('%.2f%%'%100)
-		self.viewport.set_box(win.canvas.imgbox, win.canvas.box)
+		self.viewport.set_box(win.canvas.conbox, win.canvas.winbox)
 
 	def on_handle(self):
 		win = IPy.get_window()
 		if win is None: return
 		x, y = self.viewport.GetValue()
-		print(x, y)
-		win.canvas.center(x, y)
-		win.canvas.ips.update = 'pix'
-		self.viewport.set_box(win.canvas.imgbox, win.canvas.box)
+		win.canvas.center(x, y, 'data')
+		win.ips.update()
+		self.viewport.set_box(win.canvas.conbox, win.canvas.winbox)
